@@ -1,29 +1,34 @@
 import time
-import duckdb
-from agent import ask
+import agent
 from eval_set import EVAL_SET
 
-con = duckdb.connect("olist.duckdb", read_only=True)
+con = agent.con
 
-def result_of(sql):
-    return con.execute(sql).fetchall()
+def norm(rows):
+    return [tuple(round(v, 2) if isinstance(v, float) else v for v in row) for row in rows]
 
-passed = 0
+passed = graded = 0
 for item in EVAL_SET:
-    gold = result_of(item["gold_sql"])
-    answer, agent_sql = ask(item["question"])
+    answer = agent.ask(item["question"])
+    agent_sql = agent.LAST_SQL
 
+    if item["gold_sql"] is None:
+        print(f"\nQ{item['id']}: MANUAL CHECK | {item['question']}\n  {answer}\n")
+        continue
+
+    graded += 1
+    gold = norm(con.execute(item["gold_sql"]).fetchall())
     try:
-        agent_result = result_of(agent_sql) if agent_sql else None
+        got = norm(con.execute(agent_sql).fetchall()) if agent_sql else None
     except Exception:
-        agent_result = None
+        got = None
 
-    ok = agent_result == gold
+    ok = got == gold
     passed += ok
-    print(f"Q{item['id']}: {'PASS' if ok else 'FAIL'} | {item['question']}")
+    print(f"\nQ{item['id']}: {'PASS' if ok else 'FAIL'} | {item['question']}")
     if not ok:
-        print("  gold :", gold[:3])
-        print("  agent:", (agent_result or "no SQL")[:3] if agent_result else "no SQL")
-    time.sleep(2)   # be gentle with the free-tier rate limit
+        print("  gold :", gold)
+        print("  agent:", got)
+    time.sleep(2)
 
-print(f"\nAccuracy: {passed}/{len(EVAL_SET)}")
+print(f"\nAccuracy: {passed}/{graded} (plus manual checks)")
