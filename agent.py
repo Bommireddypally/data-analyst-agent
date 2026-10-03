@@ -118,6 +118,7 @@ Business rules:
 - Only describe filters and assumptions that appear in your SQL.
 - If the question assumes something the data doesn't contain (e.g. returns,
   a year with no data), say so first, then offer the closest available measure.
+- Do not add filters (such as order_status) that the question does not ask for. The 'delivered' filter applies only to revenue and delivery-time questions.
 
 Schema:
 {get_schema()}"""

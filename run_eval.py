@@ -5,7 +5,10 @@ from eval_set import EVAL_SET
 con = agent.con
 
 def norm(rows):
-    return [tuple(round(v, 2) if isinstance(v, float) else v for v in row) for row in rows]
+    return sorted(
+        (tuple(round(v, 2) if isinstance(v, float) else v for v in row) for row in rows),
+        key=str,
+    )
 
 passed = graded = 0
 for item in EVAL_SET:
